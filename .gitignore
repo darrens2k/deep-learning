@@ -162,3 +162,7 @@ cython_debug/
 # dropping model files (MMAI 5500 - Deep Learning - Assignment 2)
 detr-resnet-50_finetuned/
 candy_detector/
+
+# ignoring frames from assignment 3 of deep learning
+*.jpg
+*.avi
