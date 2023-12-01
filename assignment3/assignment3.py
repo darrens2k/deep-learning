@@ -2,6 +2,8 @@
 # Darren Singh
 # 216236275
 
+# pep8 formatted by via flake8
+
 import os
 import cv2
 from PIL import Image
@@ -10,16 +12,18 @@ import numpy as np
 import keras
 from keras import layers
 from keras.models import load_model
-from matplotlib import pyplot as plt
 
-### These booleans control what parts of the code are run
+# File paths
+model_path = 'model.h5'
+video_path = 'assignment3_video.avi'
+frames_path = 'frames'
+
+# These booleans control what parts of the code are run
 # In its default state only the deliverables will be run
 # Change it if all of the starter/prep code is to be run as well
 run_prep_code = False
-run_deliverables = True
 
-# File paths
-
+# Deliverables at bottom of file
 
 if run_prep_code:
 
@@ -31,7 +35,8 @@ if run_prep_code:
         need to be run again.
         Arguments
         ---------
-        filename : (string) file name (absolute or relative path) of video file.
+        filename : (string) file name (absolute or relative path) of video
+        file.
         img_folder : (string) folder where the video frames will be
         stored as JPEG images.
         """
@@ -68,9 +73,8 @@ if run_prep_code:
         if i:
             print(f'Video converted\n{i} images written to {img_folder}')
 
-    ### Uncomment this step to extract frames from video
     # extract frames from video, only needs to be done once
-    # convert_video_to_images('frames')
+    convert_video_to_images(frames_path)
 
     # function to load the images
     def load_images(img_dir, im_width=60, im_height=44):
@@ -113,36 +117,13 @@ if run_prep_code:
         return X, images
 
     # call function to load images from frames
-    flat_images, image_list = load_images('frames')
+    flat_images, image_list = load_images(frames_path)
     print(flat_images.shape, len(image_list))
 
     # building simplest autoencoder (fully connected neural layer)
 
     # This is the size of our encoded representations
-    encoding_dim = 32  # 32 floats -> compression of factor 24.5, assuming the input is 784 floats
-
-    # # This is our input image
-    # input_img = keras.Input(shape=(7920,))
-    # # "encoded" is the encoded representation of the input
-    # encoded = layers.Dense(encoding_dim, activation='relu')(input_img)
-    # # "decoded" is the lossy reconstruction of the input
-    # decoded = layers.Dense(7920, activation='sigmoid')(encoded)
-
-    # # This model maps an input to its reconstruction
-    # autoencoder = keras.Model(input_img, decoded)
-
-    # # This model maps an input to its encoded representation
-    # encoder = keras.Model(input_img, encoded)
-
-    # # This is our encoded (32-dimensional) input
-    # encoded_input = keras.Input(shape=(encoding_dim,))
-    # # Retrieve the last layer of the autoencoder model
-    # decoder_layer = autoencoder.layers[-1]
-    # # Create the decoder model
-    # decoder = keras.Model(encoded_input, decoder_layer(encoded_input))
-
-    # # define loss
-    # autoencoder.compile(optimizer='adam', loss='binary_crossentropy')
+    encoding_dim = 32
 
     input_img = keras.Input(shape=(44, 60, 3))
 
@@ -169,57 +150,46 @@ if run_prep_code:
     # create training and test sets, 95% for training and 5% for testing
     # there is a total of 1050 images
 
-    ### maybe do a random shuffle of data before splitting into training and testing set
-    np.random.shuffle(flat_images)
-    percentage_split = int(0.7 * len(image_list))
+    # random shuffle of x_train before training
     x_train = np.array(image_list)
     np.random.shuffle(x_train)
-    x_test = np.array(flat_images[percentage_split:])
 
     # train autoencoder
     autoencoder.fit(x_train, x_train,
-                    epochs=250,
+                    epochs=30,
                     batch_size=128,
                     shuffle=True)
 
     # save model after training
-    autoencoder.save('model.h5')
+    autoencoder.save(model_path)
 
-if run_deliverables:
+# Deliverables
 
-    # load model
-    model = load_model('model.h5')
+# load model
+model = load_model(model_path)
 
-    def predict(frame):
-        """
-        Argument
-        --------
-        frame : Video frame with shape == (44, 60, 3) and dtype == float.
-        Return
-        anomaly : A boolean indicating whether the frame is an anomaly or not.
-        ------
-        """
 
-        # define return variable
-        anomaly = False
+def predict(frame):
+    """
+    Argument
+    --------
+    frame : Video frame with shape == (44, 60, 3) and dtype == float.
+    Return
+    anomaly : A boolean indicating whether the frame is an anomaly or not.
+    ------
+    """
 
-        # get reconstruction loss
-        ### Since using convolutional structure, needed to change the input shape
-        # Input layer does not take a flattened image
-        frame = frame.reshape((1,44,60,3))
-        loss = model.evaluate(frame, frame, verbose=0)
+    # define return variable
+    anomaly = False
 
-        if loss > 0.513:
-            anomaly = True
-            
-        # Your fancy computations here!!
-        return anomaly, loss
-    flat_images, image_list = load_images('frames')
+    # get reconstruction loss
 
-    for im in image_list[690:980]:
-        out, loss = predict(im)
-        if not out:
-            plt.imshow(im.reshape(44, 60, 3))
-            plt.gray()
-            plt.show()
-            print(loss)
+    # Since using convolutional structure, needed to change the input shape
+    # Input layer does not take a flattened image
+    frame = frame.reshape((1, 44, 60, 3))
+    loss = model.evaluate(frame, frame, verbose=0)
+
+    if loss > 0.5165:
+        anomaly = True
+
+    return anomaly
